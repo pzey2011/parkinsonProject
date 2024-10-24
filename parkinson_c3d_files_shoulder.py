@@ -49,7 +49,7 @@ def load_data():
     c3d_test_all_X = pd.DataFrame()
     c3d_test_all_y = pd.Series(dtype='float64')
     input_c3d_directory = './data/C3DFormattedCSVfiles'
-    target_c3d_column_keyword = 'Pelvic'
+    target_c3d_column_keyword = 'Shoulder'
 
     for csv_c3d_file_path in glob.glob(os.path.join(input_c3d_directory, '**', '*.csv'), recursive=True):
         input_csv_c3d_filename = os.path.basename(csv_c3d_file_path)
@@ -58,10 +58,10 @@ def load_data():
                 input_c3d_df = pd.read_csv(csv_c3d_file_path)
                 input_c3d_df['Time'] = pd.to_numeric(input_c3d_df['Time'], errors='coerce')
                 input_c3d_df = input_c3d_df.reset_index(drop=True)
-                pelvic_columns = [col for col in input_c3d_df.columns if target_c3d_column_keyword in col]
-                if pelvic_columns:
-                    input_pelvic_c3d_data = input_c3d_df[pelvic_columns]
-                    input_pelvic_c3d_data = input_pelvic_c3d_data.drop(input_pelvic_c3d_data.index[0])
+                shoulder_columns = [col for col in input_c3d_df.columns if target_c3d_column_keyword in col]
+                if shoulder_columns:
+                    input_shoulder_c3d_data = input_c3d_df[shoulder_columns]
+                    input_shoulder_c3d_data = input_shoulder_c3d_data.drop(input_shoulder_c3d_data.index[0])
             except pd.errors.EmptyDataError:
                 print(f"No data in file {input_csv_c3d_filename}, skipping.")
             except Exception as e:
@@ -81,8 +81,8 @@ def load_data():
                     target_column = 'OFF - Hoehn & Yahr ' if 'off' in input_csv_c3d_filename else 'ON - Hoehn & Yahr ' if 'on' in input_csv_c3d_filename else None
                     if target_column and target_column in c3d_input_related_target.columns:
                         c3d_input_related_target_data = c3d_input_related_target[target_column].iloc[0]
-                        c3d_input_related_target_series = pd.Series([c3d_input_related_target_data] * len(input_pelvic_c3d_data))
-                        c3d_X = input_pelvic_c3d_data
+                        c3d_input_related_target_series = pd.Series([c3d_input_related_target_data] * len(input_shoulder_c3d_data))
+                        c3d_X = input_shoulder_c3d_data
                         c3d_y = c3d_input_related_target_series
                         c3d_X = c3d_X.reset_index(drop=True)
                         c3d_y = c3d_y.reset_index(drop=True)
@@ -121,17 +121,10 @@ def load_data():
     y_train_c3d = c3d_train_all_y.sample(frac=1, random_state=42).reset_index(drop=True)
     c3d_test_X = c3d_test_X_cleaned.sample(frac=1, random_state=42).reset_index(drop=True)
     y_test_c3d = c3d_test_all_y.sample(frac=1, random_state=42).reset_index(drop=True)
-    if c3d_train_X is None or len(c3d_train_X) == 0:
-        print("Data is empty or None.0")
-    else:
-        print("Data is not empty.0")
+
     scaler = StandardScaler()
     X_train_scaled_c3d = scaler.fit_transform(c3d_train_X)
     X_test_scaled_c3d = scaler.transform(c3d_test_X)
-    if X_train_scaled_c3d is None or len(X_train_scaled_c3d) == 0:
-        print("Scaled Data is empty or None.1")
-    else:
-        print("Scaled Data is not empty.1")
     # Oversample X_train, y_train
     smote = SMOTE(random_state=42)
     X_train_scaled_c3d, y_train_c3d = smote.fit_resample(X_train_scaled_c3d, y_train_c3d)
@@ -462,6 +455,7 @@ def catboost_optimization(X_train_scaled_c3d, y_train_c3d):
     optimized_classifiers['CBC'] = catboost_classifier
 
 
+
 def lgbm_optimization(X_train_scaled_c3d, y_train_c3d):
     global optimized_classifiers
 
@@ -640,6 +634,13 @@ def metric_printer(classifier_name, classifier, X_test_scaled, y_test):
     c3d_results[classifier_name] = {'accuracy': accuracy, 'precision': precision, 'recall': recall, 'f1': f1}
 
 
+
+
+
+
+
+
+
 if __name__ == "__main__":
     X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d = load_data()
 
@@ -659,6 +660,5 @@ if __name__ == "__main__":
         metric_printer(name,clf,X_test_scaled_c3d, y_test_c3d)
 
     
-
 
 

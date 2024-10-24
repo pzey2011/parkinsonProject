@@ -49,7 +49,7 @@ def load_data():
     c3d_test_all_X = pd.DataFrame()
     c3d_test_all_y = pd.Series(dtype='float64')
     input_c3d_directory = './data/C3DFormattedCSVfiles'
-    target_c3d_column_keyword = 'Pelvic'
+    target_c3d_column_keyword = 'Trunk'
 
     for csv_c3d_file_path in glob.glob(os.path.join(input_c3d_directory, '**', '*.csv'), recursive=True):
         input_csv_c3d_filename = os.path.basename(csv_c3d_file_path)
@@ -58,10 +58,10 @@ def load_data():
                 input_c3d_df = pd.read_csv(csv_c3d_file_path)
                 input_c3d_df['Time'] = pd.to_numeric(input_c3d_df['Time'], errors='coerce')
                 input_c3d_df = input_c3d_df.reset_index(drop=True)
-                pelvic_columns = [col for col in input_c3d_df.columns if target_c3d_column_keyword in col]
-                if pelvic_columns:
-                    input_pelvic_c3d_data = input_c3d_df[pelvic_columns]
-                    input_pelvic_c3d_data = input_pelvic_c3d_data.drop(input_pelvic_c3d_data.index[0])
+                trunk_columns = [col for col in input_c3d_df.columns if target_c3d_column_keyword in col]
+                if trunk_columns:
+                    input_trunk_c3d_data = input_c3d_df[trunk_columns]
+                    input_trunk_c3d_data = input_trunk_c3d_data.drop(input_trunk_c3d_data.index[0])
             except pd.errors.EmptyDataError:
                 print(f"No data in file {input_csv_c3d_filename}, skipping.")
             except Exception as e:
@@ -81,8 +81,8 @@ def load_data():
                     target_column = 'OFF - Hoehn & Yahr ' if 'off' in input_csv_c3d_filename else 'ON - Hoehn & Yahr ' if 'on' in input_csv_c3d_filename else None
                     if target_column and target_column in c3d_input_related_target.columns:
                         c3d_input_related_target_data = c3d_input_related_target[target_column].iloc[0]
-                        c3d_input_related_target_series = pd.Series([c3d_input_related_target_data] * len(input_pelvic_c3d_data))
-                        c3d_X = input_pelvic_c3d_data
+                        c3d_input_related_target_series = pd.Series([c3d_input_related_target_data] * len(input_trunk_c3d_data))
+                        c3d_X = input_trunk_c3d_data
                         c3d_y = c3d_input_related_target_series
                         c3d_X = c3d_X.reset_index(drop=True)
                         c3d_y = c3d_y.reset_index(drop=True)
@@ -192,6 +192,28 @@ def svm_optimization(X_train_scaled_c3d, y_train_c3d):
     optimized_classifiers['SVC'] = svm_classifier_c3d
 
 
+def print_distribution(data):
+    input_related_target_series_as_int = data
+    print("input:")
+    print(input_related_target_series_as_int)
+    # Calculate the distribution of class labels
+    distribution = input_related_target_series_as_int.value_counts(sort=True)
+
+    # To get the distribution in proportions, you can do:
+    # distribution_normalized = input_related_target_series.value_counts(normalize=True, sort=True)
+
+    print("Distribution of class labels:")
+    print(distribution)
+    # To get the distribution in proportions, you can do:
+    distribution_normalized = input_related_target_series_as_int.value_counts(normalize=True, sort=True)
+    print("Distribution of class labels: normalized")
+    print(distribution_normalized)
+    distribution_percent = input_related_target_series_as_int.value_counts(normalize=True, sort=True) * 100
+
+    print("Distribution of class labels in percent:")
+    print(distribution_percent)
+
+
 def decision_tree_optimization(X_train_scaled_c3d, y_train_c3d):
     global optimized_classifiers
     def objective(trial):
@@ -232,6 +254,25 @@ def decision_tree_optimization(X_train_scaled_c3d, y_train_c3d):
     dt_classifier_c3d = DecisionTreeClassifier(**best_params)
     dt_classifier_c3d.fit(X_train_scaled_c3d, y_train_c3d)
     optimized_classifiers['DTC'] = dt_classifier_c3d
+    y_pred = dt_classifier_c3d.predict(X_test_scaled_c3d)
+
+    # print("y_train:")
+    # print(y_train_c3d)
+    # print("y_test:")
+    # print(y_test_c3d)
+    # print("y_pred:")
+    # print(y_pred)
+    # print("Distrbution for y_train:")
+    # print_distribution(y_train_c3d)
+    # print("Distrbution for y_test:")
+    # print_distribution(y_test_c3d)
+    accuracy = accuracy_score(y_test_c3d, y_pred)
+    f1 = f1_score(y_test_c3d, y_pred, average='weighted')
+    cm = confusion_matrix(y_test_c3d, y_pred)
+
+    cm_displayer(cm)
+    print('Accuracy:', accuracy)
+    print('F1 Score:', f1)
 
 def decision_tree_optimization(X_train_scaled_c3d, y_train_c3d):
     global optimized_classifiers
@@ -462,6 +503,7 @@ def catboost_optimization(X_train_scaled_c3d, y_train_c3d):
     optimized_classifiers['CBC'] = catboost_classifier
 
 
+
 def lgbm_optimization(X_train_scaled_c3d, y_train_c3d):
     global optimized_classifiers
 
@@ -640,18 +682,26 @@ def metric_printer(classifier_name, classifier, X_test_scaled, y_test):
     c3d_results[classifier_name] = {'accuracy': accuracy, 'precision': precision, 'recall': recall, 'f1': f1}
 
 
+
+
+
+
+
+
+
+
 if __name__ == "__main__":
     X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d = load_data()
 
     svm_optimization(X_train_scaled_c3d, y_train_c3d)
-    decision_tree_optimization(X_train_scaled_c3d, y_train_c3d)
-    knn_optimization(X_train_scaled_c3d, y_train_c3d)
-    naive_bayes_optimization(X_train_scaled_c3d, y_train_c3d)
-    random_forest_optimization(X_train_scaled_c3d, y_train_c3d)
-    bagging_classifier_optimization(X_train_scaled_c3d, y_train_c3d)
-    ada_boost_optimization(X_train_scaled_c3d, y_train_c3d)
-    catboost_optimization(X_train_scaled_c3d, y_train_c3d)
-    lgbm_optimization(X_train_scaled_c3d, y_train_c3d)
+decision_tree_optimization(X_train_scaled_c3d, y_train_c3d)
+knn_optimization(X_train_scaled_c3d, y_train_c3d)
+naive_bayes_optimization(X_train_scaled_c3d, y_train_c3d)
+random_forest_optimization(X_train_scaled_c3d, y_train_c3d)
+bagging_classifier_optimization(X_train_scaled_c3d, y_train_c3d)
+ada_boost_optimization(X_train_scaled_c3d, y_train_c3d)
+catboost_optimization(X_train_scaled_c3d, y_train_c3d)
+lgbm_optimization(X_train_scaled_c3d, y_train_c3d)
     xgboost_optimization(X_train_scaled_c3d, y_train_c3d)
     c3d_results = {}
     # Train and evaluate each classifier
@@ -659,6 +709,7 @@ if __name__ == "__main__":
         metric_printer(name,clf,X_test_scaled_c3d, y_test_c3d)
 
     
+
 
 
 

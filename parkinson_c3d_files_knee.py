@@ -146,7 +146,7 @@ def cm_displayer(cm):
     plt.show()
 
 
-def svm_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d):
+def svm_optimization(X_train_scaled_c3d, y_train_c3d):
     global optimized_classifiers
 
     def objective(trial):
@@ -192,7 +192,7 @@ def svm_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_
     optimized_classifiers['SVC'] = svm_classifier_c3d
 
 
-def decision_tree_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d):
+def decision_tree_optimization(X_train_scaled_c3d, y_train_c3d):
     global optimized_classifiers
     def objective(trial):
         max_features_option = trial.suggest_categorical('max_features_option', ['int', 'float', 'sqrt', 'log2', None])
@@ -233,7 +233,7 @@ def decision_tree_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3
     dt_classifier_c3d.fit(X_train_scaled_c3d, y_train_c3d)
     optimized_classifiers['DTC'] = dt_classifier_c3d
 
-def knn_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d):
+def decision_tree_optimization(X_train_scaled_c3d, y_train_c3d):
     global optimized_classifiers
 
     def objective(trial):
@@ -270,7 +270,7 @@ def knn_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_
 
 
 
-def naive_bayes_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d):
+def naive_bayes_optimization(X_train_scaled_c3d, y_train_c3d):
     global optimized_classifiers
     # Define the objective function for Optuna
     def objective(trial):
@@ -305,7 +305,7 @@ def naive_bayes_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d,
     nb_classifier.fit(X_train_scaled_c3d, y_train_c3d)
     optimized_classifiers['GNB'] = nb_classifier
 
-def bagging_classifier_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d):
+def bagging_classifier_optimization(X_train_scaled_c3d, y_train_c3d):
     global optimized_classifiers
 
     # Define the objective function for Optuna
@@ -373,7 +373,7 @@ def bagging_classifier_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_tra
     optimized_classifiers['BagC'] = bc_classifier
 
 
-def ada_boost_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d):
+def ada_boost_optimization(X_train_scaled_c3d, y_train_c3d):
     global optimized_classifiers
     def objective(trial):
         n_estimators = trial.suggest_int('n_estimators', 70, 300)
@@ -414,7 +414,7 @@ def ada_boost_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y
     optimized_classifiers['ABC'] = abc_classifier
 
 
-def catboost_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d):
+def catboost_optimization(X_train_scaled_c3d, y_train_c3d):
     global optimized_classifiers
     # Define the objective function for Optuna
     def objective(trial):
@@ -463,7 +463,7 @@ def catboost_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_
 
 
 
-def lgbm_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d):
+def lgbm_optimization(X_train_scaled_c3d, y_train_c3d):
     global optimized_classifiers
 
     def objective(trial):
@@ -514,7 +514,7 @@ def lgbm_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test
     lgbm_classifier.fit(X_train_scaled_c3d, y_train_c3d)
     optimized_classifiers['LGBMC'] = lgbm_classifier
 
-def xgboost_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d):
+def xgboost_optimization(X_train_scaled_c3d, y_train_c3d):
     # Initialize LabelEncoder
     label_encoder = LabelEncoder()
 
@@ -565,7 +565,7 @@ def xgboost_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_t
     xgb_clf.fit(X_train_scaled_c3d, y_encoded)
     optimized_classifiers['XGBC'] = xgb_clf
 
-def random_forest_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d):
+def random_forest_optimization(X_train_scaled_c3d, y_train_c3d):
     global optimized_classifiers
 
     # Define the objective function for Optuna
@@ -644,16 +644,16 @@ def metric_printer(classifier_name, classifier, X_test_scaled, y_test):
 if __name__ == "__main__":
     X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d = load_data()
 
-    svm_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d)
-    decision_tree_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d)
-    knn_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d)
-    naive_bayes_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d)
-    random_forest_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d)
-    bagging_classifier_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d)
-    ada_boost_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d)
-    catboost_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d)
-    lgbm_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d)
-    xgboost_optimization(X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d)
+    svm_optimization(X_train_scaled_c3d, y_train_c3d)
+    decision_tree_optimization(X_train_scaled_c3d, y_train_c3d)
+    knn_optimization(X_train_scaled_c3d, y_train_c3d)
+    naive_bayes_optimization(X_train_scaled_c3d, y_train_c3d)
+    random_forest_optimization(X_train_scaled_c3d, y_train_c3d)
+    bagging_classifier_optimization(X_train_scaled_c3d, y_train_c3d)
+    ada_boost_optimization(X_train_scaled_c3d, y_train_c3d)
+    catboost_optimization(X_train_scaled_c3d, y_train_c3d)
+    lgbm_optimization(X_train_scaled_c3d, y_train_c3d)
+    xgboost_optimization(X_train_scaled_c3d, y_train_c3d)
     c3d_results = {}
     # Train and evaluate each classifier
     for name,clf in optimized_classifiers.items():
