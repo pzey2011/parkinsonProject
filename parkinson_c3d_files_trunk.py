@@ -694,14 +694,14 @@ if __name__ == "__main__":
     X_train_scaled_c3d, X_test_scaled_c3d, y_train_c3d, y_test_c3d = load_data()
 
     svm_optimization(X_train_scaled_c3d, y_train_c3d)
-decision_tree_optimization(X_train_scaled_c3d, y_train_c3d)
-knn_optimization(X_train_scaled_c3d, y_train_c3d)
-naive_bayes_optimization(X_train_scaled_c3d, y_train_c3d)
-random_forest_optimization(X_train_scaled_c3d, y_train_c3d)
-bagging_classifier_optimization(X_train_scaled_c3d, y_train_c3d)
-ada_boost_optimization(X_train_scaled_c3d, y_train_c3d)
-catboost_optimization(X_train_scaled_c3d, y_train_c3d)
-lgbm_optimization(X_train_scaled_c3d, y_train_c3d)
+    decision_tree_optimization(X_train_scaled_c3d, y_train_c3d)
+    knn_optimization(X_train_scaled_c3d, y_train_c3d)
+    naive_bayes_optimization(X_train_scaled_c3d, y_train_c3d)
+    random_forest_optimization(X_train_scaled_c3d, y_train_c3d)
+    bagging_classifier_optimization(X_train_scaled_c3d, y_train_c3d)
+    ada_boost_optimization(X_train_scaled_c3d, y_train_c3d)
+    catboost_optimization(X_train_scaled_c3d, y_train_c3d)
+    lgbm_optimization(X_train_scaled_c3d, y_train_c3d)
     xgboost_optimization(X_train_scaled_c3d, y_train_c3d)
     c3d_results = {}
     # Train and evaluate each classifier
