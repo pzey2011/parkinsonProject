@@ -274,7 +274,7 @@ def decision_tree_optimization(X_train_scaled_c3d, y_train_c3d):
     print('Accuracy:', accuracy)
     print('F1 Score:', f1)
 
-def decision_tree_optimization(X_train_scaled_c3d, y_train_c3d):
+def knn_optimization(X_train_scaled_c3d, y_train_c3d):
     global optimized_classifiers
 
     def objective(trial):

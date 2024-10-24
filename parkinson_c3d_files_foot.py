@@ -232,7 +232,7 @@ def decision_tree_optimization(X_train_scaled_c3d, y_train_c3d):
     dt_classifier_c3d.fit(X_train_scaled_c3d, y_train_c3d)
     optimized_classifiers['DTC'] = dt_classifier_c3d
 
-def decision_tree_optimization(X_train_scaled_c3d, y_train_c3d):
+def knn_optimization(X_train_scaled_c3d, y_train_c3d):
     global optimized_classifiers
 
     def objective(trial):

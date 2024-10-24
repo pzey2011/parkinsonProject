@@ -329,7 +329,7 @@ def decision_tree_optimization(X_train_scaled_c3d, y_train_c3d):
     plot_confusion_matrix(y_pred, X_test_scaled_c3d, y_test_c3d)
 
 
-def decision_tree_optimization(X_train_scaled_c3d, y_train_c3d):
+def knn_optimization(X_train_scaled_c3d, y_train_c3d):
     global optimized_classifiers
 
     def objective(trial):
