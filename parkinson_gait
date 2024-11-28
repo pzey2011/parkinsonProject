@@ -1,0 +1,131 @@
+import os
+import glob
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier, BaggingClassifier, AdaBoostClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.naive_bayes import GaussianNB
+from catboost import CatBoostClassifier
+from lightgbm import LGBMClassifier
+from xgboost import XGBClassifier
+import optuna
+from imblearn.over_sampling import SMOTE
+
+# Global storage for classifiers and results
+optimized_classifiers = {}
+c3d_results = {}
+
+# Utility functions
+def get_target_from_file(filename, target_dfs, target_keyword):
+    collected_data = pd.DataFrame()
+    for sheet_name, sheet_df in target_dfs.items():
+        if 'ID' not in sheet_df:
+            continue
+        id = filename.split('_')[0]
+        target_column = f'{target_keyword} - Hoehn & Yahr '
+        if id in sheet_df['ID'].values and target_column in sheet_df.columns:
+            target_row = sheet_df.loc[sheet_df['ID'] == id, ['ID', target_column]]
+            if not target_row.empty:
+                collected_data = pd.concat([collected_data, target_row], ignore_index=True)
+    return collected_data
+
+def is_training_file(filename):
+    sub_id = int(filename[3:5])
+    sub_mode = filename[6:8]
+    return not (sub_id == 2 or (sub_id == 15 and sub_mode == 'on'))
+
+def load_data(target_keyword):
+    input_c3d_directory = './data/C3DFormattedCSVfiles'
+    target_directory = './data/'
+    c3d_train_X, c3d_test_X = pd.DataFrame(), pd.DataFrame()
+    c3d_train_y, c3d_test_y = pd.Series(dtype='float64'), pd.Series(dtype='float64')
+
+    for csv_file in glob.glob(os.path.join(input_c3d_directory, '**', '*.csv'), recursive=True):
+        filename = os.path.basename(csv_file)
+        if not any(kw in filename for kw in ['walk_1', 'walk_2', 'walk_3']):
+            continue
+        try:
+            data = pd.read_csv(csv_file)
+            data['Time'] = pd.to_numeric(data['Time'], errors='coerce')
+            data.dropna(inplace=True)
+            target_columns = [col for col in data.columns if target_keyword in col]
+            if not target_columns:
+                continue
+
+            target_df = pd.read_excel(os.path.join(target_directory, 'PDGinfo.xlsx'), sheet_name=None)
+            target_info = get_target_from_file(filename, target_df, target_keyword)
+            if target_info.empty:
+                continue
+
+            target_column = f'{target_keyword} - Hoehn & Yahr '
+            target_value = target_info[target_column].iloc[0]
+            y_series = pd.Series([target_value] * len(data), name='target')
+
+            if is_training_file(filename):
+                c3d_train_X = pd.concat([c3d_train_X, data[target_columns]])
+                c3d_train_y = pd.concat([c3d_train_y, y_series])
+            else:
+                c3d_test_X = pd.concat([c3d_test_X, data[target_columns]])
+                c3d_test_y = pd.concat([c3d_test_y, y_series])
+        except Exception as e:
+            print(f"Error processing {filename}: {e}")
+
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(c3d_train_X)
+    X_test_scaled = scaler.transform(c3d_test_X)
+
+    smote = SMOTE(random_state=42)
+    X_train_scaled, y_train = smote.fit_resample(X_train_scaled, c3d_train_y)
+    y_test = c3d_test_y.reset_index(drop=True)
+
+    return X_train_scaled, X_test_scaled, y_train, y_test
+
+def metric_printer(classifier_name, classifier, X_test, y_test):
+    y_pred = classifier.predict(X_test)
+    metrics = {
+        'Accuracy': accuracy_score(y_test, y_pred),
+        'Precision': precision_score(y_test, y_pred, average='weighted', zero_division=0),
+        'Recall': recall_score(y_test, y_pred, average='weighted', zero_division=0),
+        'F1 Score': f1_score(y_test, y_pred, average='weighted')
+    }
+    print(f"{classifier_name} metrics:")
+    for k, v in metrics.items():
+        print(f"{k}: {v:.4f}")
+    c3d_results[classifier_name] = metrics
+
+# Example classifier optimization function
+def svm_optimization(X_train_scaled, y_train):
+    def objective(trial):
+        kernel = trial.suggest_categorical('kernel', ['linear', 'poly', 'rbf', 'sigmoid'])
+        C = trial.suggest_float('C', 0.1, 10.0, log=True)
+        gamma = trial.suggest_categorical('gamma', ['scale', 'auto'])
+        svc = SVC(kernel=kernel, C=C, gamma=gamma, random_state=42)
+
+        skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+        scores = cross_val_score(svc, X_train_scaled, y_train, cv=skf, scoring='f1_weighted')
+        return scores.mean()
+
+    study = optuna.create_study(direction='maximize')
+    study.optimize(objective, n_trials=10, n_jobs=1)
+    best_params = study.best_params
+    classifier = SVC(**best_params, random_state=42)
+    classifier.fit(X_train_scaled, y_train)
+    optimized_classifiers['SVC'] = classifier
+
+if __name__ == "__main__":
+    # Load data for both Ankle and Elbow and train classifiers
+    for target in ['Ankle', 'Elbow', 'Shoulder','Trunk', 'Pelvis', 'Knee', 'Hip', 'Foot']:
+        print(f"Processing {target} data:")
+        X_train, X_test, y_train, y_test = load_data(target)
+
+        # Train and evaluate SVM as an example
+        svm_optimization(X_train, y_train)
+        for name, clf in optimized_classifiers.items():
+            metric_printer(name, clf, X_test, y_test)
